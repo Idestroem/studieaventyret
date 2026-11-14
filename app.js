@@ -105,10 +105,10 @@ try{const glitter=localStorage.getItem('vasaGlitter');document.getElementById('g
 if(speechAvailable){populateVoices();window.speechSynthesis.addEventListener('voiceschanged',populateVoices)}
 if(!speechAvailable){document.getElementById('readQuiz').disabled=true;document.getElementById('speechInfo').textContent='Den här webbläsaren saknar stöd för uppläsning.'}
 
+const THEMES=[['pink','💖 Rosa'],['ocean','🌊 Havsblå'],['forest','🌿 Skogsgrön'],['violet','🔮 Lila'],['night','🌙 Mörk']];
 document.getElementById('examAnswer').addEventListener('input',saveAnswer);
 buildQuizSession();initTheme();renderQuiz();
 
-const THEMES=[['pink','💖 Rosa'],['ocean','🌊 Havsblå'],['forest','🌿 Skogsgrön'],['violet','🔮 Lila'],['night','🌙 Mörk']];
 function initTheme(){
  let saved='pink';try{saved=localStorage.getItem('studyTheme')||'pink'}catch(e){}
  setTheme(THEMES.some(t=>t[0]===saved)?saved:'pink');
