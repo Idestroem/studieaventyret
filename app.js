@@ -47,27 +47,27 @@ function buildQuizSession(pool=questions){
  });
 }
 
-function newMatchRound(){matchRound=shuffle(matchPairs).slice(0,5);matchOrder=shuffle([0,1,2,3,4]);matchDone=new Set();matchLeft=null;matchRight=null;renderMatch()}
-function pickMatch(side,i){if(matchDone.has(i))return;if(side==='left')matchLeft=i;else matchRight=i;const note=document.getElementById('matchNote');note.className='match-note';note.textContent='';if(matchLeft!==null&&matchRight!==null){if(matchLeft===matchRight){matchDone.add(matchLeft);note.textContent=matchDone.size===5?'🎉✨ Alla rätt! Fantastiskt! ✨🎉':'💖 Snyggt parat!';if(matchDone.size===5)celebrateGlitter('match');else celebrateGlitter('small');note.classList.add('success');matchLeft=null;matchRight=null}else{note.textContent='💡 Inte riktigt – välj ett annat kort!';note.classList.add('error');if(side==='left')matchRight=null;else matchLeft=null}}renderMatchCards()}
+function newMatchRound(){stopReading();matchRound=shuffle(matchPairs).slice(0,5);matchOrder=shuffle([0,1,2,3,4]);matchDone=new Set();matchLeft=null;matchRight=null;renderMatch();if(document.getElementById('autoRead').checked&&!document.getElementById('match').classList.contains('hidden'))readMatchRound()}
+function pickMatch(side,i){stopReading();if(matchDone.has(i))return;if(side==='left')matchLeft=i;else matchRight=i;const note=document.getElementById('matchNote');note.className='match-note';note.textContent='';if(matchLeft!==null&&matchRight!==null){if(matchLeft===matchRight){matchDone.add(matchLeft);note.textContent=matchDone.size===5?'🎉✨ Alla rätt! Fantastiskt! ✨🎉':'💖 Snyggt parat!';if(matchDone.size===5)celebrateGlitter('match');else celebrateGlitter('small');note.classList.add('success');matchLeft=null;matchRight=null}else{note.textContent='💡 Inte riktigt – välj ett annat kort!';note.classList.add('error');if(side==='left')matchRight=null;else matchLeft=null}}renderMatchCards()}
 function renderMatch(){if(!matchRound.length)newMatchRound();else renderMatchCards()}
 function renderMatchCards(){document.getElementById('matchScore').textContent=matchDone.size+' av 5 par';document.getElementById('matchBar').style.width=(matchDone.size*20)+'%';document.getElementById('matchLeft').innerHTML=matchRound.map((p,i)=>`<button class="match-card ${matchDone.has(i)?'matched':matchLeft===i?'selected':''}" ${matchDone.has(i)?'disabled':''} onclick="pickMatch('left',${i})">${matchDone.has(i)?'✓ ':''}${p[0]}</button>`).join('');document.getElementById('matchRight').innerHTML=matchOrder.map(i=>`<button class="match-card ${matchDone.has(i)?'matched':matchRight===i?'selected':''}" ${matchDone.has(i)?'disabled':''} onclick="pickMatch('right',${i})">${matchDone.has(i)?'✓ ':''}${matchRound[i][1]}</button>`).join('')}
 function toggleSettings(){const panel=document.getElementById('settingsPanel');panel.classList.toggle('hidden');document.getElementById('settingsToggle').setAttribute('aria-expanded',String(!panel.classList.contains('hidden')))}
 
 let index=0,score=0,streak=0,wrong=[],selected=null,examIndex=0;let examAnswers=JSON.parse(localStorage.getItem('vasaAnswers')||'{}');
-function showMode(mode){stopReading();document.getElementById('match').classList.toggle('hidden',mode!=='match');document.getElementById('tabMatch').classList.toggle('active',mode==='match');document.getElementById('quiz').classList.toggle('hidden',mode!=='quiz');document.getElementById('exam').classList.toggle('hidden',mode!=='exam');document.getElementById('tabQuiz').classList.toggle('active',mode==='quiz');document.getElementById('tabExam').classList.toggle('active',mode==='exam');if(mode==='exam')renderExam();if(mode==='match')renderMatch()}
+function showMode(mode){stopReading();document.getElementById('match').classList.toggle('hidden',mode!=='match');document.getElementById('tabMatch').classList.toggle('active',mode==='match');document.getElementById('quiz').classList.toggle('hidden',mode!=='quiz');document.getElementById('exam').classList.toggle('hidden',mode!=='exam');document.getElementById('tabQuiz').classList.toggle('active',mode==='quiz');document.getElementById('tabExam').classList.toggle('active',mode==='exam');if(mode==='exam')renderExam();if(mode==='match'){renderMatch();if(document.getElementById('autoRead').checked)readMatchRound()}}
 function renderQuiz(){stopReading();const content=document.getElementById('quizContent');document.getElementById('score').textContent='⭐ '+score+' poäng';document.getElementById('streak').textContent='🔥 '+streak+' i rad';document.getElementById('bar').style.width=(index/quizQuestions.length*100)+'%';if(index>=quizQuestions.length){document.getElementById('counter').textContent='Färdigt!';if(score===quizQuestions.length)celebrateGlitter('perfect');content.innerHTML=`<h2>🎉 Bra jobbat!</h2><p>Du fick <strong>${score} av ${quizQuestions.length}</strong> poäng.</p><p>${wrong.length?'Du kan träna extra på '+wrong.length+' frågor.':'Alla rätt! Fantastiskt!'}</p><div class="row"><button class="primary" onclick="restart(false)">Spela igen</button>${wrong.length?'<button class="secondary" onclick="restart(true)">Repetera fel</button>':''}</div>`;return}const q=quizQuestions[index];document.getElementById('counter').textContent='Fråga '+(index+1)+' av '+quizQuestions.length;content.innerHTML=`<h3>${q.q}</h3><div class="answers">${q.a.map((a,i)=>`<button class="answer" id="ans${i}" onclick="choose(${i})">${String.fromCharCode(65+i)}. ${a}</button>`).join('')}</div><div id="feedbackArea"></div>`;if(document.getElementById('autoRead').checked)readQuizQuestion()}
-function choose(i){stopReading();if(selected!==null)return;selected=i;const q=quizQuestions[index];let ok=i===q.c;if(ok){score++;streak++;celebrateGlitter(streak===5?'streak':'small')}else{wrong.push(q);streak=0}q.a.forEach((_,j)=>{let el=document.getElementById('ans'+j);el.disabled=true;if(j===q.c)el.classList.add('correct');if(j===i&&!ok)el.classList.add('wrong')});document.getElementById('feedbackArea').innerHTML=`<div class="feedback"><strong>${ok?'🌟 Rätt svar!':'💡 Bra försök!'}</strong><p>${q.why}</p></div>${streak===5?'<div id="celebrate">🎉✨🎊✨🎉 Fem rätt i rad!</div>':''}<button class="primary" onclick="nextQuestion()">${index===quizQuestions.length-1?'Se resultat':'Nästa fråga →'}</button>`;document.getElementById('score').textContent='⭐ '+score+' poäng';document.getElementById('streak').textContent='🔥 '+streak+' i rad'}
+function choose(i){stopReading();if(selected!==null)return;selected=i;const q=quizQuestions[index];let ok=i===q.c;if(ok){score++;streak++;celebrateGlitter(streak===5?'streak':'small')}else{wrong.push(q);streak=0}q.a.forEach((_,j)=>{let el=document.getElementById('ans'+j);el.disabled=true;if(j===q.c)el.classList.add('correct');if(j===i&&!ok)el.classList.add('wrong')});document.getElementById('feedbackArea').innerHTML=`<div class="feedback"><strong>${ok?'🌟 Rätt svar!':'💡 Bra försök!'}</strong><p>${q.why}</p></div>${streak===5?'<div id="celebrate">🎉✨🎊✨🎉 Fem rätt i rad!</div>':''}<button class="primary" onclick="nextQuestion()">${index===quizQuestions.length-1?'Se resultat':'Nästa fråga →'}</button>`;document.getElementById('score').textContent='⭐ '+score+' poäng';document.getElementById('streak').textContent='🔥 '+streak+' i rad';if(document.getElementById('autoRead').checked)readFeedback()}
 function nextQuestion(){index++;selected=null;if(!maybeBreak())renderQuiz()}
 function restart(onlyWrong){const pool=onlyWrong?wrong.map(w=>questions.find(q=>q.q===w.q)).filter(Boolean):questions;buildQuizSession(pool);activeQuizSeconds=0;lastQuizInteraction=Date.now();index=0;score=0;streak=0;wrong=[];selected=null;renderQuiz()}
-function renderExam(){stopReading();document.getElementById('examCounter').textContent='Fråga '+(examIndex+1)+' av '+exams.length;document.getElementById('examBar').style.width=(examIndex/exams.length*100)+'%';document.getElementById('examQuestion').textContent=exams[examIndex].q;document.getElementById('examAnswer').value=examAnswers[examIndex]||'';document.getElementById('examAnswer').classList.remove('hidden');document.getElementById('examHelp').classList.add('hidden');document.getElementById('reveal').classList.remove('hidden');document.getElementById('nextExam').textContent=examIndex===exams.length-1?'Börja om →':'Nästa fråga →'}
-function revealExam(){saveAnswer();document.getElementById('examHelp').innerHTML='<strong>Det här är bra att få med:</strong><ul>'+exams[examIndex].points.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="small">Jämför med ditt eget svar. Det behöver inte vara exakt samma ord!</p>';document.getElementById('examHelp').classList.remove('hidden')}
+function renderExam(){stopReading();document.getElementById('examCounter').textContent='Fråga '+(examIndex+1)+' av '+exams.length;document.getElementById('examBar').style.width=(examIndex/exams.length*100)+'%';document.getElementById('examQuestion').textContent=exams[examIndex].q;document.getElementById('examAnswer').value=examAnswers[examIndex]||'';document.getElementById('examAnswer').classList.remove('hidden');document.getElementById('examHelp').classList.add('hidden');document.getElementById('reveal').classList.remove('hidden');document.getElementById('nextExam').textContent=examIndex===exams.length-1?'Börja om →':'Nästa fråga →';document.getElementById('spellingNote').textContent='';if(document.getElementById('autoRead').checked)readExamQuestion()}
+function revealExam(){saveAnswer();document.getElementById('examHelp').innerHTML='<strong>Det här är bra att få med:</strong><ul>'+exams[examIndex].points.map(x=>'<li>'+x+'</li>').join('')+'</ul><p class="small">Jämför med ditt eget svar. Det behöver inte vara exakt samma ord!</p>';document.getElementById('examHelp').classList.remove('hidden');if(document.getElementById('autoRead').checked)readExamHelp()}
 function saveAnswer(){examAnswers[examIndex]=document.getElementById('examAnswer').value;localStorage.setItem('vasaAnswers',JSON.stringify(examAnswers))}
 function advanceExam(){saveAnswer();examIndex=(examIndex+1)%exams.length;renderExam()}
 
 // Uppläsning med webbläsarens inbyggda talsyntes. Ingen extern tjänst behövs.
 const speechAvailable=('speechSynthesis' in window)&&('SpeechSynthesisUtterance' in window);
-let speechToken=0;
-function stopReading(){speechToken++;if(speechAvailable)window.speechSynthesis.cancel()}
+let speechToken=0;let activeSpeechElement=null;
+function stopReading(){speechToken++;if(speechAvailable)window.speechSynthesis.cancel();document.querySelectorAll('.reading-now').forEach(el=>el.classList.remove('reading-now'));activeSpeechElement=null}
 function updateSpeechRate(){try{localStorage.setItem('vasaSpeechRate',document.getElementById('speechRate').value)}catch(e){}}
 function updateSpeechVoice(){try{localStorage.setItem('vasaSpeechVoice',document.getElementById('speechVoice').value)}catch(e){}}
 function populateVoices(){
@@ -88,20 +88,35 @@ function preferredVoice(voices){
  return swedish.find(v=>femaleNames.test(v.name))||swedish[0]||null;
 }
 function toggleAutoRead(){try{localStorage.setItem('vasaAutoRead',document.getElementById('autoRead').checked?'1':'0')}catch(e){}}
-function speak(text){
- if(!speechAvailable){document.getElementById('speechInfo').textContent='Uppläsning stöds tyvärr inte i den här webbläsaren.';return}
+// Varje uppläst del har en egen markering. Vi förlitar oss inte på opålitliga ordgränser i vissa röster.
+function speakSequence(parts){
+ if(!speechAvailable){document.getElementById('speechInfo').textContent='Uppläsning stöds inte i den här webbläsaren.';return}
  stopReading();const token=speechToken;
- const utterance=new SpeechSynthesisUtterance(text);
- utterance.lang='sv-SE';utterance.rate=Number(document.getElementById('speechRate').value)||0.9;
- const chosen=preferredVoice(window.speechSynthesis.getVoices());
- if(chosen)utterance.voice=chosen;
- utterance.onend=()=>{if(token===speechToken)document.getElementById('speechInfo').textContent=''};
- utterance.onerror=()=>{if(token===speechToken)document.getElementById('speechInfo').textContent='Uppläsningen kunde inte starta. Kontrollera att en svensk röst finns på enheten.'};
- document.getElementById('speechInfo').textContent='🔊 Läser upp…';window.speechSynthesis.speak(utterance);
+ const voices=window.speechSynthesis.getVoices(), voice=preferredVoice(voices);
+ const rate=Number(document.getElementById('speechRate').value)||0.9;
+ function next(i){
+  if(token!==speechToken)return;
+  document.querySelectorAll('.reading-now').forEach(el=>el.classList.remove('reading-now'));
+  if(i>=parts.length){document.getElementById('speechInfo').textContent='';return}
+  const part=parts[i],el=typeof part.selector==='string'?document.querySelector(part.selector):null;
+  if(el){el.classList.add('reading-now');activeSpeechElement=el}
+  const utterance=new SpeechSynthesisUtterance(part.text);utterance.lang='sv-SE';utterance.rate=rate;if(voice)utterance.voice=voice;
+  utterance.onend=()=>next(i+1);
+  utterance.onerror=e=>{if(token===speechToken){document.getElementById('speechInfo').textContent=e.error==='canceled'?'':'Uppläsningen kunde inte slutföras.';document.querySelectorAll('.reading-now').forEach(x=>x.classList.remove('reading-now'))}};
+  document.getElementById('speechInfo').textContent='🔊 Läser upp…';window.speechSynthesis.speak(utterance);
+ }
+ next(0)
 }
-function readQuizQuestion(){if(index>=quizQuestions.length)return;const q=quizQuestions[index];speak('Fråga '+(index+1)+'. '+q.q+'. '+q.a.map((a,i)=>'Alternativ '+String.fromCharCode(65+i)+': '+a+'.').join(' '))}
-function readExamQuestion(){speak('Fråga '+(examIndex+1)+'. '+exams[examIndex].q)}
-try{const glitter=localStorage.getItem('vasaGlitter');document.getElementById('glitterEnabled').checked=glitter!=='0';const rate=localStorage.getItem('vasaSpeechRate');if(['0.75','0.9','1.05'].includes(rate))document.getElementById('speechRate').value=rate;document.getElementById('autoRead').checked=localStorage.getItem('vasaAutoRead')==='1'}catch(e){}
+function speak(text){speakSequence([{text:String(text)}])}
+function readQuizQuestion(){if(index>=quizQuestions.length)return;const q=quizQuestions[index];speakSequence([{text:'Fråga '+(index+1)+'. '+q.q,selector:'#quizContent h3'},...q.a.map((a,i)=>({text:'Alternativ '+String.fromCharCode(65+i)+'. '+a,selector:'#ans'+i}))])}
+function readFeedback(){const q=quizQuestions[index];if(q)speakSequence([{text:(selected===q.c?'Rätt svar. ':'Bra försök. ')+q.why,selector:'#feedbackArea .feedback'}])}
+function readExamQuestion(){speakSequence([{text:'Fråga '+(examIndex+1)+'. '+exams[examIndex].q,selector:'#examQuestion'}])}
+function readExamHelp(){speakSequence([{text:'Det här är bra att få med. '+exams[examIndex].points.join('. '),selector:'#examHelp'}])}
+function readExamAnswer(){const text=document.getElementById('examAnswer').value.trim();if(text)speakSequence([{text,selector:'#examAnswer'}])}
+function readMatchRound(){if(!matchRound.length)return;const parts=[{text:document.getElementById('matchInstructions').textContent,selector:'#matchInstructions'}];matchRound.forEach((pair,i)=>parts.push({text:pair[0],selector:'#matchLeft button:nth-child('+(i+1)+')'}));matchOrder.forEach((i,k)=>parts.push({text:matchRound[i][1],selector:'#matchRight button:nth-child('+(k+1)+')'}));speakSequence(parts)}
+function saveSpellHelp(){const checked=document.getElementById('spellHelp').checked;document.getElementById('examAnswer').spellcheck=checked;try{localStorage.setItem('studySpellHelp',checked?'1':'0')}catch(e){}}
+function showSpellingHelp(){const area=document.getElementById('examAnswer');if(!document.getElementById('spellHelp').checked){document.getElementById('spellHelp').checked=true;saveSpellHelp()}area.focus();document.getElementById('spellingNote').textContent='Webbläsaren kan markera felstavade ord. Högerklicka (eller håll ned på mobilen) på ett markerat ord för förslag. Inga ändringar görs automatiskt.'}
+try{const glitter=localStorage.getItem('vasaGlitter');document.getElementById('glitterEnabled').checked=glitter!=='0';const rate=localStorage.getItem('vasaSpeechRate');if(['0.75','0.9','1.05'].includes(rate))document.getElementById('speechRate').value=rate;document.getElementById('autoRead').checked=localStorage.getItem('vasaAutoRead')==='1';document.getElementById('spellHelp').checked=localStorage.getItem('studySpellHelp')!=='0';saveSpellHelp()}catch(e){}
 if(speechAvailable){populateVoices();window.speechSynthesis.addEventListener('voiceschanged',populateVoices)}
 if(!speechAvailable){document.getElementById('readQuiz').disabled=true;document.getElementById('speechInfo').textContent='Den här webbläsaren saknar stöd för uppläsning.'}
 
@@ -136,9 +151,12 @@ function maybeBreak(){
  breakOpen=true;stopReading();
  const mount=document.getElementById('breakMount');mount.innerHTML='';
  const overlay=document.createElement('div');overlay.className='break-overlay';
- overlay.innerHTML='<div class="break-dialog" role="dialog" aria-modal="true" aria-labelledby="breakTitle"><div style="font-size:2.6rem">🎩</div><p>Ministeriet för Fullständigt Nödvändiga Avbrott</p><h2 id="breakTitle"></h2><p id="breakTask"></p><div class="break-actions"><button class="primary" id="breakDone">Jag lyder! 🫡</button><button class="secondary" id="breakSkip">Jag överklagar!</button></div></div>';
+ overlay.innerHTML='<div class="break-dialog" role="dialog" aria-modal="true" aria-labelledby="breakTitle"><div style="font-size:2.6rem">🎩</div><p>Ministeriet för Fullständigt Nödvändiga Avbrott</p><h2 id="breakTitle"></h2><p id="breakTask"></p><div class="break-actions"><button class="secondary" id="breakRead">🔊 Läs upp</button><button class="primary" id="breakDone">Jag lyder! 🫡</button><button class="secondary" id="breakSkip">Jag överklagar!</button></div></div>';
  overlay.querySelector('#breakTitle').textContent=title;overlay.querySelector('#breakTask').textContent=task;
- const close=()=>{mount.replaceChildren();breakOpen=false;activeQuizSeconds=0;nextBreakAfter=480+Math.floor(Math.random()*420);lastQuizInteraction=Date.now();renderQuiz()};
- overlay.querySelector('#breakDone').onclick=close;overlay.querySelector('#breakSkip').onclick=close;
- mount.appendChild(overlay);overlay.querySelector('#breakDone').focus();return true;
+ const close=()=>{stopReading();mount.replaceChildren();breakOpen=false;activeQuizSeconds=0;nextBreakAfter=480+Math.floor(Math.random()*420);lastQuizInteraction=Date.now();if(!document.getElementById('quiz').classList.contains('hidden'))renderQuiz()};
+ overlay.querySelector('#breakRead').onclick=()=>readBreak();overlay.querySelector('#breakDone').onclick=close;overlay.querySelector('#breakSkip').onclick=close;
+ mount.appendChild(overlay);overlay.querySelector('#breakDone').focus();if(document.getElementById('autoRead').checked)readBreak();return true;
 }
+
+function readBreak(){const title=document.getElementById('breakTitle'),task=document.getElementById('breakTask');if(!title||!task)return;speakSequence([{text:'Ministeriet för Fullständigt Nödvändiga Avbrott',selector:'.break-dialog > p'},{text:title.textContent,selector:'#breakTitle'},{text:task.textContent,selector:'#breakTask'}])}
+function testBreak(){if(breakOpen)return;if(!document.getElementById('breaksEnabled').checked){document.getElementById('breaksEnabled').checked=true;saveBreakSetting()}activeQuizSeconds=nextBreakAfter;lastQuizInteraction=Date.now();maybeBreak()}

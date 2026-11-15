@@ -23,4 +23,3 @@ En statisk studieapp för webbläsare. Inga konton, ingen databas, ingen install
 
 ## Nästa steg
 Flytta frågebanken till ett generellt ämnesformat, utöka antalet frågor och testa på telefon/surfplatta. Ingen server eller AI-nyckel behövs för denna beta.
---
