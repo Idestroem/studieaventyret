@@ -27,9 +27,14 @@ body[data-theme="night"] .muted{color:#d3c9e3}body[data-theme="night"] .answer{c
 .break-overlay{position:fixed;inset:0;background:#180f2077;z-index:8000;display:grid;place-items:center;padding:16px}.break-dialog{max-width:500px;width:100%;background:var(--surface);color:var(--ink);border-radius:24px;padding:26px;text-align:center;box-shadow:0 15px 60px #0005}.break-dialog h2{font-size:1.6rem}.break-actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}
 @media(prefers-reduced-motion:reduce){.progress>div{transition:none}}
 
-/* Beta 2: tydlig visuell följsamhet vid uppläsning */
-.reading-now{background:#ffe57b!important;color:#292016!important;box-shadow:0 0 0 3px #d48c0c,0 0 0 6px #ffe57b66!important;border-radius:10px;transition:background .12s ease;outline-offset:3px}
-.answer.reading-now,.match-card.reading-now{border-color:#d48c0c!important}
+/* Beta 2: temaanpassad markering vid uppläsning. */
+body{--read-bg:#ffd1e8;--read-ink:#5b123c;--read-border:#c32279;--read-glow:#e85aa955}
+body[data-theme="ocean"]{--read-bg:#b9e5ff;--read-ink:#113b60;--read-border:#1671b6;--read-glow:#54b5f366}
+body[data-theme="forest"]{--read-bg:#bcecc9;--read-ink:#16452b;--read-border:#28734a;--read-glow:#5dbd7a66}
+body[data-theme="violet"]{--read-bg:#dfc6ff;--read-ink:#38205c;--read-border:#7548b3;--read-glow:#aa75ef66}
+body[data-theme="night"]{--read-bg:#6d559d;--read-ink:#ffffff;--read-border:#d1b5ff;--read-glow:#b89aff77}
+.reading-now{background:var(--read-bg)!important;color:var(--read-ink)!important;box-shadow:0 0 0 3px var(--read-border),0 0 0 6px var(--read-glow)!important;border-radius:10px;transition:background .12s ease;outline-offset:3px}
+.answer.reading-now,.match-card.reading-now{border-color:var(--read-border)!important}
 #examQuestion.reading-now,#matchInstructions.reading-now{padding:8px}
-#examAnswer.reading-now{border-color:#d48c0c!important}
+#examAnswer.reading-now{border-color:var(--read-border)!important}
 @media(prefers-reduced-motion:reduce){.reading-now{transition:none}}
