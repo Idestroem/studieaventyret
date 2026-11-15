@@ -92,21 +92,37 @@ function toggleAutoRead(){try{localStorage.setItem('vasaAutoRead',document.getEl
 function speakSequence(parts){
  if(!speechAvailable){document.getElementById('speechInfo').textContent='Uppläsning stöds inte i den här webbläsaren.';return}
  stopReading();const token=speechToken;
- const voices=window.speechSynthesis.getVoices(), voice=preferredVoice(voices);
+ const voice=preferredVoice(window.speechSynthesis.getVoices());
  const rate=Number(document.getElementById('speechRate').value)||0.9;
+ // Behåll referenser till yttrandena tills uppläsningen är färdig (viktigt i vissa webbläsare).
+ const utterances=[];
+ function highlight(el){
+  document.querySelectorAll('.reading-now').forEach(x=>x.classList.remove('reading-now'));
+  activeSpeechElement=el||null;
+  if(el)el.classList.add('reading-now');
+ }
  function next(i){
   if(token!==speechToken)return;
-  document.querySelectorAll('.reading-now').forEach(el=>el.classList.remove('reading-now'));
-  if(i>=parts.length){document.getElementById('speechInfo').textContent='';return}
-  const part=parts[i],el=typeof part.selector==='string'?document.querySelector(part.selector):null;
-  if(el){el.classList.add('reading-now');activeSpeechElement=el}
-  const utterance=new SpeechSynthesisUtterance(part.text);utterance.lang='sv-SE';utterance.rate=rate;if(voice)utterance.voice=voice;
-  utterance.onend=()=>next(i+1);
-  utterance.onerror=e=>{if(token===speechToken){document.getElementById('speechInfo').textContent=e.error==='canceled'?'':'Uppläsningen kunde inte slutföras.';document.querySelectorAll('.reading-now').forEach(x=>x.classList.remove('reading-now'))}};
-  document.getElementById('speechInfo').textContent='🔊 Läser upp…';window.speechSynthesis.speak(utterance);
+  if(i>=parts.length){highlight(null);document.getElementById('speechInfo').textContent='';return}
+  const part=parts[i],el=part.selector?document.querySelector(part.selector):null;
+  const utterance=new SpeechSynthesisUtterance(part.text);
+  utterances.push(utterance);
+  utterance.lang='sv-SE';utterance.rate=rate;if(voice)utterance.voice=voice;
+  // Markera omedelbart som reservlösning; onstart bekräftar när talet faktiskt börjar.
+  highlight(el);
+  utterance.onstart=()=>{if(token===speechToken)highlight(el)};
+  utterance.onend=()=>{if(token===speechToken)next(i+1)};
+  utterance.onerror=e=>{
+   if(token!==speechToken)return;
+   highlight(null);
+   document.getElementById('speechInfo').textContent=e.error==='canceled'?'':'Uppläsningen kunde inte slutföras.';
+  };
+  document.getElementById('speechInfo').textContent='🔊 Läser upp…';
+  window.speechSynthesis.speak(utterance);
  }
- next(0)
+ next(0);
 }
+
 function speak(text){speakSequence([{text:String(text)}])}
 function readQuizQuestion(){if(index>=quizQuestions.length)return;const q=quizQuestions[index];speakSequence([{text:'Fråga '+(index+1)+'. '+q.q,selector:'#quizContent h3'},...q.a.map((a,i)=>({text:'Alternativ '+String.fromCharCode(65+i)+'. '+a,selector:'#ans'+i}))])}
 function readFeedback(){const q=quizQuestions[index];if(q)speakSequence([{text:(selected===q.c?'Rätt svar. ':'Bra försök. ')+q.why,selector:'#feedbackArea .feedback'}])}
